@@ -6,51 +6,59 @@ import { useCreateAgentStore } from "@/store/createAgentStore";
 import { chatbotAPI, handleAPIError } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useCreateAgent } from "@/hooks/useCreateAgent";
 
 const SideAction = () => {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);
   const { agentName, uploadedFiles, clearAll } = useCreateAgentStore();
+  const createAgent = useCreateAgent();
 
   const handleCreateAgent = async () => {
     if (uploadedFiles.length === 0) {
-      alert("Please upload at least one knowledge base before creating the agent");
+      alert(
+        "Please upload at least one knowledge base before creating the agent"
+      );
       return;
     }
 
     setIsCreating(true);
-    try {
-      // Step 1: Create the chatbot
-      const { chatbot } = await chatbotAPI.createWithKB(agentName);
 
-      console.log("Chatbot created:", chatbot.id);
+    createAgent.mutate(agentName, {
+      onSuccess: async (data) => {
+        const { chatbot } = data;
+        const uploadPromises = uploadedFiles.map(async (uploadedFile) => {
+          if (uploadedFile.type === "FILE" && uploadedFile.file) {
+            return chatbotAPI.uploadFile(chatbot.id, uploadedFile.file);
+          } else if (uploadedFile.type === "TEXT" && uploadedFile.content) {
+            return chatbotAPI.uploadText(
+              chatbot.id,
+              uploadedFile.content,
+              uploadedFile.name
+            );
+          } else if (uploadedFile.type === "WEBSITE" && uploadedFile.url) {
+            return chatbotAPI.uploadWebsite(
+              chatbot.id,
+              uploadedFile.url,
+              uploadedFile.name
+            );
+          }
+        });
+        await Promise.all(uploadPromises);
 
-      // Step 2: Upload all files to the newly created chatbot
-      const uploadPromises = uploadedFiles.map(async (uploadedFile) => {
-        if (uploadedFile.type === "FILE" && uploadedFile.file) {
-          return chatbotAPI.uploadFile(chatbot.id, uploadedFile.file);
-        } else if (uploadedFile.type === "TEXT" && uploadedFile.content) {
-          return chatbotAPI.uploadText(chatbot.id, uploadedFile.content, uploadedFile.name);
-        } else if (uploadedFile.type === "WEBSITE" && uploadedFile.url) {
-          return chatbotAPI.uploadWebsite(chatbot.id, uploadedFile.url, uploadedFile.name);
-        }
-      });
-
-      await Promise.all(uploadPromises);
-
-      // Clear temporary storage
-      clearAll();
-
-      // Redirect to the agent's playground
-      localStorage.setItem("botId", chatbot.id);
-      router.push(`/agents/${chatbot.id}/playground`);
-    } catch (error) {
-      console.error("Error creating agent:", error);
-      const errorMessage = handleAPIError(error);
-      alert(`Failed to create agent: ${errorMessage}`);
-    } finally {
-      setIsCreating(false);
-    }
+        clearAll();
+        localStorage.setItem("botId", chatbot.id);
+        router.push(`/agents/${chatbot.id}/playground`);
+      },
+      onError: (error) => {
+        console.error("Error creating agent:", error);
+        const errorMessage = handleAPIError(error);
+        alert(`Failed to create agent: ${errorMessage}`);
+      },
+      onSettled: () => {
+        setIsCreating(false);
+      },
+    });
   };
 
   return (
@@ -64,7 +72,9 @@ const SideAction = () => {
           {/* Total Size Section */}
           <div className="flex items-center justify-between">
             <span className="text-muted-foreground text-lg">Total files</span>
-            <span className="font-semibold text-lg">{uploadedFiles.length}</span>
+            <span className="font-semibold text-lg">
+              {uploadedFiles.length}
+            </span>
           </div>
 
           {/* Create Agent Button */}

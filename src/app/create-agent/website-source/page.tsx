@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronUp, Info, Globe, Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { useCreateAgentStore } from "@/store/createAgentStore";
-import UploadedFilesList from "@/components/UploadedFilesList";
+import UploadedFilesList from "@/components/upload-file-list";
 
 const WebsiteSource = () => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -75,7 +75,8 @@ const WebsiteSource = () => {
             </span>
           </div>
           <p className="text-foreground text-base">
-            Add websites to crawl and train your AI. Perfect for documentation sites, blogs, or knowledge bases.
+            Add websites to crawl and train your AI. Perfect for documentation
+            sites, blogs, or knowledge bases.
           </p>
         </div>
         <Button
@@ -110,7 +111,8 @@ const WebsiteSource = () => {
             <Alert className="border-green-200 bg-green-50 text-green-900">
               <Info className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Enter a website URL to crawl and extract content. The AI will learn from all accessible pages on the site.
+                Enter a website URL to crawl and extract content. The AI will
+                learn from all accessible pages on the site.
               </AlertDescription>
             </Alert>
 

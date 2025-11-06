@@ -1,6 +1,6 @@
 "use client";
 
-import { AgentSidebar } from "@/components/AgentSidebar";
+import { AgentSidebar } from "@/components/agent-sidebar";
 import { SourcesPage } from "@/components/source-page";
 import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";

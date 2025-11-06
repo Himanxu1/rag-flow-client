@@ -1,6 +1,6 @@
 "use client";
 
-import AppSidebar from "@/components/AppSidebar";
+import AppSidebar from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import React, { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";

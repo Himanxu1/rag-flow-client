@@ -19,10 +19,14 @@ interface UploadedFilesListProps {
   filterType?: "FILE" | "TEXT" | "WEBSITE";
 }
 
-const UploadedFilesList: React.FC<UploadedFilesListProps> = ({ filterType }) => {
+const UploadedFilesList: React.FC<UploadedFilesListProps> = ({
+  filterType,
+}) => {
   const { uploadedFiles, removeUploadedFile } = useCreateAgentStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [fileToDelete, setFileToDelete] = React.useState<UploadedFile | null>(null);
+  const [fileToDelete, setFileToDelete] = React.useState<UploadedFile | null>(
+    null
+  );
 
   // Filter files by type if specified
   const filteredFiles = filterType
@@ -80,7 +84,8 @@ const UploadedFilesList: React.FC<UploadedFilesListProps> = ({ filterType }) => 
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="text-lg">
-            Uploaded {filterType ? filterType.toLowerCase() + "s" : "Files"} ({filteredFiles.length})
+            Uploaded {filterType ? filterType.toLowerCase() + "s" : "Files"} (
+            {filteredFiles.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -120,8 +125,8 @@ const UploadedFilesList: React.FC<UploadedFilesListProps> = ({ filterType }) => 
           <AlertDialogHeader>
             <AlertDialogTitle>Remove File</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to remove "{fileToDelete?.name}"? This will not affect
-              already created agents.
+              Are you sure you want to remove "{fileToDelete?.name}"? This will
+              not affect already created agents.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

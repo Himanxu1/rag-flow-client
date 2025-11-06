@@ -3,11 +3,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ChevronUp, Info, Upload, Loader2, CheckCircle, XCircle } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import {
+  ChevronUp,
+  Info,
+  Upload,
+  Loader2,
+  CheckCircle,
+  XCircle,
+} from "lucide-react";
+import React, { useState } from "react";
 import { handleAPIError } from "@/lib/api";
 import { useCreateAgentStore } from "@/store/createAgentStore";
-import UploadedFilesList from "@/components/UploadedFilesList";
+import UploadedFilesList from "@/components/upload-file-list";
 
 interface UploadingFile {
   id: string;
@@ -63,7 +70,9 @@ const FileSource = () => {
       // Update status to success
       setUploadingFiles((prev) =>
         prev.map((item) =>
-          item.id === fileId ? { ...item, status: "success", progress: 100 } : item
+          item.id === fileId
+            ? { ...item, status: "success", progress: 100 }
+            : item
         )
       );
 
@@ -113,7 +122,6 @@ const FileSource = () => {
     // Reset input
     e.target.value = "";
   };
-
 
   return (
     <div>
@@ -226,7 +234,8 @@ const FileSource = () => {
                           </span>
                         </div>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {upload.status === "uploading" && `${upload.progress}%`}
+                          {upload.status === "uploading" &&
+                            `${upload.progress}%`}
                           {upload.status === "success" && "Complete"}
                           {upload.status === "error" && "Failed"}
                         </span>

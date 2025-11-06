@@ -1,4 +1,4 @@
-import AppSidebar from "@/components/AppSidebar";
+import AppSidebar from "@/components/app-sidebar";
 import Landing from "@/components/landing-page/landing";
 import Link from "next/link";
 

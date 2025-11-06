@@ -141,6 +141,13 @@ export const chatAPI = {
     const response = await apiClient.get(`/chat/${chatbotId}/status`);
     return response.data;
   },
+
+  getAllChatbats: async () => {
+    const response = await apiClient.get(
+      "http://localhost:3001/api/v1/chatbot/get-chatbots"
+    );
+    return response.data.chatbots;
+  },
 };
 
 // Chatbot API

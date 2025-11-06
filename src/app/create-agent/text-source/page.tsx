@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronUp, Info, FileText, Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { useCreateAgentStore } from "@/store/createAgentStore";
-import UploadedFilesList from "@/components/UploadedFilesList";
+import UploadedFilesList from "@/components/upload-file-list";
 
 const TextSource = () => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -60,7 +60,8 @@ const TextSource = () => {
             </span>
           </div>
           <p className="text-foreground text-base">
-            Add text content to train your AI. Perfect for FAQs, documentation, or any text-based information.
+            Add text content to train your AI. Perfect for FAQs, documentation,
+            or any text-based information.
           </p>
         </div>
         <Button
@@ -95,7 +96,8 @@ const TextSource = () => {
             <Alert className="border-blue-200 bg-blue-50 text-blue-900">
               <Info className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
-                Add any text content you want your AI to learn from. This could be FAQs, product descriptions, documentation, or any other text.
+                Add any text content you want your AI to learn from. This could
+                be FAQs, product descriptions, documentation, or any other text.
               </AlertDescription>
             </Alert>
 

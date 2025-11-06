@@ -1,5 +1,5 @@
-import CreateAgentSidebar from "@/components/CreateAgentSidebar";
-import SideAction from "@/components/SideAction";
+import CreateAgentSidebar from "@/components/creare-agent-sidebar";
+import SideAction from "@/components/side-action";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import React from "react";
 
