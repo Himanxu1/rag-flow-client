@@ -11,25 +11,36 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home } from "lucide-react";
+import { Bot, BarChart3 } from "lucide-react";
 import Logout from "./Logout";
 
 const items = [
   {
     title: "Agents",
-    url: "./agents",
-    icon: Home,
+    url: "/home",
+    icon: Bot,
   },
   {
     title: "Analytics",
-    url: "./analytics",
-    icon: Home,
+    url: "/home/analytics",
+    icon: BarChart3,
   },
 ];
 
 const AppSidebar = () => {
   return (
     <Sidebar>
+      <SidebarHeader className="border-b border-sidebar-border p-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
+            <Bot className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-sidebar-foreground">ChatFlow</h2>
+            <p className="text-xs text-muted-foreground">AI Agent Platform</p>
+          </div>
+        </div>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Application</SidebarGroupLabel>
@@ -46,13 +57,12 @@ const AppSidebar = () => {
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
-            <div>
-              <Logout />
-            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter />
+      <SidebarFooter className="border-t border-sidebar-border p-4 mt-auto">
+        <Logout />
+      </SidebarFooter>
     </Sidebar>
   );
 };

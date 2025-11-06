@@ -3,12 +3,13 @@
 import type React from "react";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, ArrowRight } from "lucide-react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
+import { authAPI, handleAPIError } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -18,8 +19,18 @@ export default function RegisterPage() {
     confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
-  const navigator = useRouter();
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/home");
+    }
+  }, [isAuthenticated, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -38,26 +49,43 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
     try {
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match");
+        setError("Passwords do not match");
+        setIsLoading(false);
         return;
       }
 
-      const data = await axios.post(
-        "http://localhost:3001/api/v1/auth/register",
-        {
-          email: formData.email,
-          password: formData.password,
-          name: formData.fullName,
-        }
+      if (passwordStrength < 2) {
+        setError("Password is too weak. Please use a stronger password.");
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await authAPI.register(
+        formData.email,
+        formData.password,
+        formData.fullName
       );
 
-      console.log(data);
-      navigator.push("/login");
-      setIsLoading(true);
+      if (data.token) {
+        console.log("Registration successful:", data);
+        // Store token and login
+        localStorage.setItem("token", data.token);
+        login(data.token);
+        // Redirect to home
+        router.push("/home");
+      } else {
+        setError("Registration failed. Please try again.");
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Registration error:", err);
+      setError(handleAPIError(err));
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -267,18 +295,12 @@ export default function RegisterPage() {
             </div>
 
             {/* Social Login */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <Button
                 variant="outline"
                 className="border-border/30 hover:bg-card/50 bg-transparent font-sans"
               >
                 Google
-              </Button>
-              <Button
-                variant="outline"
-                className="border-border/30 hover:bg-card/50 bg-transparent font-sans"
-              >
-                GitHub
               </Button>
             </div>
           </div>

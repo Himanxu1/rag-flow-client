@@ -2,16 +2,26 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ChevronUp, Info, Upload } from "lucide-react";
-import React, { useState } from "react";
-import axios from "axios";
-import { useAuthStore } from "@/store/authStore";
+import { Progress } from "@/components/ui/progress";
+import { ChevronUp, Info, Upload, Loader2, CheckCircle, XCircle } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { handleAPIError } from "@/lib/api";
+import { useCreateAgentStore } from "@/store/createAgentStore";
+import UploadedFilesList from "@/components/UploadedFilesList";
+
+interface UploadingFile {
+  id: string;
+  file: File;
+  progress: number;
+  status: "uploading" | "success" | "error";
+  error?: string;
+}
 
 const FileSource = () => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [isDragActive, setIsDragActive] = useState(false);
-  const [uploadFile, setUploadFile] = useState<Blob | null>(null);
-  const { token, isAuthenticated } = useAuthStore();
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const addUploadedFile = useCreateAgentStore((state) => state.addUploadedFile);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -23,47 +33,88 @@ const FileSource = () => {
     }
   };
 
-  /**
-   * this function is used to upload the file , after the upload it
-   * should be running automatically
-   * 1. send the file and create knowledge base record database
-   *
-   */
+  const handleFileUpload = async (file: File) => {
+    const fileId = `${Date.now()}-${file.name}`;
 
-  const handlePdfUpload = async () => {
-    const formData = new FormData();
-    if (uploadFile) {
-      formData.append("pdf", uploadFile);
+    // Add to uploading files list
+    const newUpload: UploadingFile = {
+      id: fileId,
+      file,
+      progress: 0,
+      status: "uploading",
+    };
+    setUploadingFiles((prev) => [newUpload, ...prev]);
+
+    try {
+      // Simulate progress for temporary storage
+      const simulateProgress = async () => {
+        for (let i = 0; i <= 100; i += 10) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          setUploadingFiles((prev) =>
+            prev.map((item) =>
+              item.id === fileId ? { ...item, progress: i } : item
+            )
+          );
+        }
+      };
+
+      await simulateProgress();
+
+      // Update status to success
+      setUploadingFiles((prev) =>
+        prev.map((item) =>
+          item.id === fileId ? { ...item, status: "success", progress: 100 } : item
+        )
+      );
+
+      // Add to temporary storage
+      addUploadedFile({
+        id: fileId,
+        name: file.name,
+        type: "FILE",
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+        file: file,
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      const errorMessage = handleAPIError(error);
+
+      // Update status to error
+      setUploadingFiles((prev) =>
+        prev.map((item) =>
+          item.id === fileId
+            ? { ...item, status: "error", error: errorMessage }
+            : item
+        )
+      );
     }
-
-    console.log("token", token);
-    const response = await axios.post(
-      "http://localhost:3001/api/v1/chatbot/upload",
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    console.log(response, "response");
   };
 
-  const handleDrop = (e: any) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsDragActive(false);
-    const file = e.dataTransfer.files[0];
-    setUploadFile(file);
-    console.log("Files dropped:", file);
+
+    const files = Array.from(e.dataTransfer.files);
+    for (const file of files) {
+      await handleFileUpload(file);
+    }
   };
 
-  const handleFileSelect = (e: any) => {
-    const file = e.target.files[0];
-    console.log("her");
-    setUploadFile(file);
-    handlePdfUpload();
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    for (let i = 0; i < files.length; i++) {
+      await handleFileUpload(files[i]);
+    }
+
+    // Reset input
+    e.target.value = "";
   };
+
+
   return (
     <div>
       <div className="w-full max-w-4xl mx-auto space-y-6">
@@ -149,12 +200,59 @@ const FileSource = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Upload Progress Section */}
+              {uploadingFiles.length > 0 && (
+                <div className="space-y-3 pt-4 border-t">
+                  <h3 className="text-sm font-semibold">Upload Status</h3>
+                  {uploadingFiles.slice(0, 5).map((upload) => (
+                    <div
+                      key={upload.id}
+                      className="space-y-2 p-3 rounded-lg border border-border bg-background"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {upload.status === "uploading" && (
+                            <Loader2 className="w-4 h-4 animate-spin text-blue-500 flex-shrink-0" />
+                          )}
+                          {upload.status === "success" && (
+                            <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                          )}
+                          {upload.status === "error" && (
+                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                          )}
+                          <span className="text-sm font-medium truncate">
+                            {upload.file.name}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {upload.status === "uploading" && `${upload.progress}%`}
+                          {upload.status === "success" && "Complete"}
+                          {upload.status === "error" && "Failed"}
+                        </span>
+                      </div>
+                      {upload.status === "uploading" && (
+                        <Progress value={upload.progress} className="h-1" />
+                      )}
+                      {upload.status === "error" && upload.error && (
+                        <p className="text-xs text-red-500">{upload.error}</p>
+                      )}
+                    </div>
+                  ))}
+                  {uploadingFiles.length > 5 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      +{uploadingFiles.length - 5} more files
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           )}
         </Card>
-      </div>
 
-      {/* Uploaded Files option */}
+        {/* Display uploaded files */}
+        <UploadedFilesList filterType="FILE" />
+      </div>
     </div>
   );
 };

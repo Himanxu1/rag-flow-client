@@ -3,45 +3,56 @@
 import type React from "react";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageSquare, ArrowRight } from "lucide-react";
-import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { authAPI, handleAPIError } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const login = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const router = useRouter();
 
+  // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/home");
+    }
+  }, [isAuthenticated, router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+    setIsLoading(true);
 
     try {
-      const { data } = await axios.post(
-        "http://localhost:3001/api/v1/auth/signin",
-        {
-          email,
-          password,
-        },
-        { withCredentials: true }
-      );
+      const data = await authAPI.login(email, password);
 
-      if (data.status) {
+      if (data.status && data.token) {
         console.log("Login successful:", data);
+        // Store token in localStorage
+        localStorage.setItem("token", data.token);
+        // Update auth store
         login(data.token);
+        // Redirect to home
         router.push("/home");
+      } else {
+        setError("Login failed. Please try again.");
       }
     } catch (error) {
       console.error("Login failed:", error);
+      setError(handleAPIError(error));
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(true);
   };
 
   return (
@@ -85,6 +96,13 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
+                  {error}
+                </div>
+              )}
+
               {/* Email Field */}
               <div className="space-y-2">
                 <label
@@ -152,18 +170,12 @@ export default function LoginPage() {
             </div>
 
             {/* Social Login */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3">
               <Button
                 variant="outline"
                 className="border-border/30 hover:bg-card/50 bg-transparent font-sans"
               >
                 Google
-              </Button>
-              <Button
-                variant="outline"
-                className="border-border/30 hover:bg-card/50 bg-transparent font-sans"
-              >
-                GitHub
               </Button>
             </div>
           </div>
