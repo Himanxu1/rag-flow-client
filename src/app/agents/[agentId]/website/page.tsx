@@ -6,7 +6,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Globe, Loader2, CheckCircle2, AlertCircle, Link2, Trash2 } from "lucide-react";
+import {
+  Globe,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Link2,
+  Trash2,
+} from "lucide-react";
 import { handleAPIError } from "@/lib/api";
 import { useKnowledgeBasesByCategory } from "@/hooks/useKnowledgeBasesByCategory";
 import { useDeleteKnowledgeBase } from "@/hooks/useDeleteKnowledgeBase";
@@ -23,7 +30,10 @@ export default function AgentWebsitePage() {
   const [error, setError] = useState("");
 
   // TanStack Query hooks
-  const { data: kbData, isLoading } = useKnowledgeBasesByCategory(agentId, "WEBSITE");
+  const { data: kbData, isLoading } = useKnowledgeBasesByCategory(
+    agentId,
+    "WEBSITE"
+  );
   const deleteKnowledgeBase = useDeleteKnowledgeBase();
   const uploadWebsite = useUploadWebsite();
 
@@ -74,7 +84,11 @@ export default function AgentWebsitePage() {
   };
 
   const handleDelete = async (kbId: string) => {
-    if (!confirm("Are you sure you want to delete this website? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this website? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
@@ -119,7 +133,7 @@ export default function AgentWebsitePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {knowledgeBases.map((kb) => (
+                {knowledgeBases.map((kb: any) => (
                   <motion.div
                     key={kb.id}
                     initial={{ opacity: 0, y: -10 }}
@@ -211,7 +225,7 @@ export default function AgentWebsitePage() {
                     placeholder="https://example.com"
                     value={websiteUrl}
                     onChange={(e) => setWebsiteUrl(e.target.value)}
-                    disabled={isUploading}
+                    disabled={isLoading}
                     className="pl-10"
                   />
                 </div>
@@ -231,7 +245,7 @@ export default function AgentWebsitePage() {
                   placeholder="e.g., Company Documentation"
                   value={websiteName}
                   onChange={(e) => setWebsiteName(e.target.value)}
-                  disabled={isUploading}
+                  disabled={isLoading}
                 />
                 <p className="text-xs text-muted-foreground">
                   If not provided, we'll use the website's title
@@ -246,7 +260,9 @@ export default function AgentWebsitePage() {
                   className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg"
                 >
                   <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {error}
+                  </p>
                 </motion.div>
               )}
 
@@ -259,8 +275,8 @@ export default function AgentWebsitePage() {
                 >
                   <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                   <p className="text-sm text-green-600 dark:text-green-400">
-                    Website scraping started successfully! Processing may take a few
-                    moments.
+                    Website scraping started successfully! Processing may take a
+                    few moments.
                   </p>
                 </motion.div>
               )}

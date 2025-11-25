@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Loader2, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
+import {
+  FileText,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Trash2,
+} from "lucide-react";
 import { handleAPIError } from "@/lib/api";
 import { useKnowledgeBasesByCategory } from "@/hooks/useKnowledgeBasesByCategory";
 import { useDeleteKnowledgeBase } from "@/hooks/useDeleteKnowledgeBase";
@@ -24,7 +30,10 @@ export default function AgentTextPage() {
   const [error, setError] = useState("");
 
   // TanStack Query hooks
-  const { data: kbData, isLoading } = useKnowledgeBasesByCategory(agentId, "TEXT");
+  const { data: kbData, isLoading } = useKnowledgeBasesByCategory(
+    agentId,
+    "TEXT"
+  );
   const deleteKnowledgeBase = useDeleteKnowledgeBase();
   const uploadText = useUploadText();
 
@@ -61,7 +70,11 @@ export default function AgentTextPage() {
   };
 
   const handleDelete = async (kbId: string) => {
-    if (!confirm("Are you sure you want to delete this text? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this text? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
@@ -106,7 +119,7 @@ export default function AgentTextPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {knowledgeBases.map((kb) => (
+                {knowledgeBases.map((kb: any) => (
                   <motion.div
                     key={kb.id}
                     initial={{ opacity: 0, y: -10 }}
@@ -185,7 +198,7 @@ export default function AgentTextPage() {
                   placeholder="e.g., Product Documentation"
                   value={textName}
                   onChange={(e) => setTextName(e.target.value)}
-                  disabled={isUploading}
+                  disabled={isLoading}
                 />
               </div>
 
@@ -199,7 +212,7 @@ export default function AgentTextPage() {
                   placeholder="Paste your text content here..."
                   value={textContent}
                   onChange={(e) => setTextContent(e.target.value)}
-                  disabled={isUploading}
+                  disabled={isLoading}
                   className="min-h-[300px] resize-y"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -215,7 +228,9 @@ export default function AgentTextPage() {
                   className="flex items-center gap-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg"
                 >
                   <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {error}
+                  </p>
                 </motion.div>
               )}
 
@@ -237,7 +252,11 @@ export default function AgentTextPage() {
               <div className="flex gap-4">
                 <Button
                   type="submit"
-                  disabled={uploadText.isPending || !textName.trim() || !textContent.trim()}
+                  disabled={
+                    uploadText.isPending ||
+                    !textName.trim() ||
+                    !textContent.trim()
+                  }
                   className="min-w-[150px]"
                 >
                   {uploadText.isPending ? (

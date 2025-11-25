@@ -38,7 +38,11 @@ export default function AgentFilePage() {
   const [isDragging, setIsDragging] = useState(false);
 
   // TanStack Query hooks
-  const { data: kbData, isLoading, refetch } = useKnowledgeBasesByCategory(agentId, "FILE");
+  const {
+    data: kbData,
+    isLoading,
+    refetch,
+  } = useKnowledgeBasesByCategory(agentId, "FILE");
   const deleteKnowledgeBase = useDeleteKnowledgeBase();
   const uploadFile = useUploadFile();
 
@@ -47,7 +51,7 @@ export default function AgentFilePage() {
   // Auto-refresh status every 3 seconds if there are processing files
   useEffect(() => {
     const hasProcessing = knowledgeBases.some(
-      (kb) => kb.status === "PROCESSING" || kb.status === "PENDING"
+      (kb: any) => kb.status === "PROCESSING" || kb.status === "PENDING"
     );
 
     if (hasProcessing) {
@@ -109,7 +113,9 @@ export default function AgentFilePage() {
 
       setUploadingFiles((prev) =>
         prev.map((item) =>
-          item.id === fileId ? { ...item, status: "success", progress: 100 } : item
+          item.id === fileId
+            ? { ...item, status: "success", progress: 100 }
+            : item
         )
       );
 
@@ -133,7 +139,11 @@ export default function AgentFilePage() {
   };
 
   const handleDelete = async (kbId: string) => {
-    if (!confirm("Are you sure you want to delete this file? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this file? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
@@ -177,7 +187,8 @@ export default function AgentFilePage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">File Sources</h1>
           <p className="text-muted-foreground">
-            Upload and manage documents to train your chatbot (PDF, TXT, DOC, DOCX)
+            Upload and manage documents to train your chatbot (PDF, TXT, DOC,
+            DOCX)
           </p>
         </div>
 
@@ -198,7 +209,7 @@ export default function AgentFilePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {knowledgeBases.map((kb) => (
+                {knowledgeBases.map((kb: any) => (
                   <motion.div
                     key={kb.id}
                     initial={{ opacity: 0, y: -10 }}
@@ -216,18 +227,24 @@ export default function AgentFilePage() {
                               className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
                                 kb.status === "READY"
                                   ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                  : kb.status === "PROCESSING" || kb.status === "PENDING"
+                                  : kb.status === "PROCESSING" ||
+                                    kb.status === "PENDING"
                                   ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
                                   : kb.status === "FAILED"
                                   ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                                   : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                               }`}
                             >
-                              {(kb.status === "PROCESSING" || kb.status === "PENDING") && (
+                              {(kb.status === "PROCESSING" ||
+                                kb.status === "PENDING") && (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               )}
-                              {kb.status === "READY" && <CheckCircle2 className="w-3 h-3" />}
-                              {kb.status === "FAILED" && <AlertCircle className="w-3 h-3" />}
+                              {kb.status === "READY" && (
+                                <CheckCircle2 className="w-3 h-3" />
+                              )}
+                              {kb.status === "FAILED" && (
+                                <AlertCircle className="w-3 h-3" />
+                              )}
                               {kb.status || "PENDING"}
                             </span>
                             <span className="text-xs text-muted-foreground">
