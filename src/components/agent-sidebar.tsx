@@ -11,6 +11,7 @@ import {
   Users,
   Rocket,
   Settings,
+  Key,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -44,6 +45,7 @@ export function AgentSidebar({ currentPage, onPageChange }: SidebarProps) {
       deploy: `/agents/${agentId}/deploy`,
       activity: `/agents/${agentId}/activity`,
       actions: `/agents/${agentId}/actions`,
+      "api-keys": `/agents/${agentId}/api-keys`,
     };
 
     if (routes[pageId]) {
@@ -68,7 +70,11 @@ export function AgentSidebar({ currentPage, onPageChange }: SidebarProps) {
   };
 
   const handleSettingsNavigation = (settingId: string) => {
-    router.push(`/agents/${agentId}/setting?tab=${settingId}`);
+    if (settingId === "api-keys") {
+      router.push(`/agents/${agentId}/api-keys`);
+    } else {
+      router.push(`/agents/${agentId}/setting?tab=${settingId}`);
+    }
   };
 
   const isCurrentPage = (pageId: string) => {
@@ -78,6 +84,7 @@ export function AgentSidebar({ currentPage, onPageChange }: SidebarProps) {
     if (pageId === "deploy" && pathname?.includes("/deploy")) return true;
     if (pageId === "activity" && pathname?.includes("/activity")) return true;
     if (pageId === "actions" && pathname?.includes("/actions")) return true;
+    if (pageId === "api-keys" && pathname?.includes("/api-keys")) return true;
     return currentPage === pageId;
   };
 
@@ -96,6 +103,7 @@ export function AgentSidebar({ currentPage, onPageChange }: SidebarProps) {
   const settingsSubmenu = [
     { id: "general", label: "General" },
     { id: "ai", label: "AI" },
+    { id: "api-keys", label: "API Keys" },
   ];
 
   const bottomItems = [

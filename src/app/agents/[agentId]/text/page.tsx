@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FileText, Loader2, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
-import { chatbotAPI, handleAPIError } from "@/lib/api";
-import { useKnowledgeBaseStore } from "@/store/knowledgeBaseStore";
+import { handleAPIError } from "@/lib/api";
+import { useKnowledgeBasesByCategory } from "@/hooks/useKnowledgeBasesByCategory";
+import { useDeleteKnowledgeBase } from "@/hooks/useDeleteKnowledgeBase";
+import { useUploadText } from "@/hooks/useUploadText";
 
 export default function AgentTextPage() {
   const params = useParams();
@@ -18,17 +20,15 @@ export default function AgentTextPage() {
 
   const [textName, setTextName] = useState("");
   const [textContent, setTextContent] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { knowledgeBases, isLoading, fetchByCategory, deleteKnowledgeBase } =
-    useKnowledgeBaseStore();
+  // TanStack Query hooks
+  const { data: kbData, isLoading } = useKnowledgeBasesByCategory(agentId, "TEXT");
+  const deleteKnowledgeBase = useDeleteKnowledgeBase();
+  const uploadText = useUploadText();
 
-  useEffect(() => {
-    fetchByCategory(agentId, "TEXT");
-  }, [agentId, fetchByCategory]);
+  const knowledgeBases = kbData?.knowledgeBases || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,24 +39,24 @@ export default function AgentTextPage() {
     }
 
     try {
-      setIsUploading(true);
       setError("");
       setUploadSuccess(false);
 
-      await chatbotAPI.uploadText(agentId, textContent, textName);
+      await uploadText.mutateAsync({
+        agentId,
+        text: textContent,
+        name: textName,
+      });
 
       setUploadSuccess(true);
       setTimeout(() => {
         setTextName("");
         setTextContent("");
         setUploadSuccess(false);
-        fetchByCategory(agentId, "TEXT");
       }, 2000);
     } catch (err) {
       console.error("Error uploading text:", err);
       setError(handleAPIError(err));
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -65,13 +65,12 @@ export default function AgentTextPage() {
       return;
     }
 
-    setDeletingId(kbId);
-    const success = await deleteKnowledgeBase(kbId);
-    setDeletingId(null);
-
-    if (success) {
-      await fetchByCategory(agentId, "TEXT");
-    }
+    deleteKnowledgeBase.mutate(kbId, {
+      onError: (error) => {
+        console.error("Error deleting knowledge base:", error);
+        alert("Failed to delete text. Please try again.");
+      },
+    });
   };
 
   return (
@@ -149,10 +148,10 @@ export default function AgentTextPage() {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(kb.id)}
-                        disabled={deletingId === kb.id}
+                        disabled={deleteKnowledgeBase.isPending}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                       >
-                        {deletingId === kb.id ? (
+                        {deleteKnowledgeBase.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Trash2 className="w-4 h-4" />
@@ -238,10 +237,10 @@ export default function AgentTextPage() {
               <div className="flex gap-4">
                 <Button
                   type="submit"
-                  disabled={isUploading || !textName.trim() || !textContent.trim()}
+                  disabled={uploadText.isPending || !textName.trim() || !textContent.trim()}
                   className="min-w-[150px]"
                 >
-                  {isUploading ? (
+                  {uploadText.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Uploading...
@@ -257,7 +256,7 @@ export default function AgentTextPage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  disabled={isUploading}
+                  disabled={uploadText.isPending}
                 >
                   Cancel
                 </Button>

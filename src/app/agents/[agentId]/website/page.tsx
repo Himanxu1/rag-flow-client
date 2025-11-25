@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Globe, Loader2, CheckCircle2, AlertCircle, Link2, Trash2 } from "lucide-react";
-import { chatbotAPI, handleAPIError } from "@/lib/api";
-import { useKnowledgeBaseStore } from "@/store/knowledgeBaseStore";
+import { handleAPIError } from "@/lib/api";
+import { useKnowledgeBasesByCategory } from "@/hooks/useKnowledgeBasesByCategory";
+import { useDeleteKnowledgeBase } from "@/hooks/useDeleteKnowledgeBase";
+import { useUploadWebsite } from "@/hooks/useUploadWebsite";
 
 export default function AgentWebsitePage() {
   const params = useParams();
@@ -17,17 +19,15 @@ export default function AgentWebsitePage() {
 
   const [websiteName, setWebsiteName] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [error, setError] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { knowledgeBases, isLoading, fetchByCategory, deleteKnowledgeBase } =
-    useKnowledgeBaseStore();
+  // TanStack Query hooks
+  const { data: kbData, isLoading } = useKnowledgeBasesByCategory(agentId, "WEBSITE");
+  const deleteKnowledgeBase = useDeleteKnowledgeBase();
+  const uploadWebsite = useUploadWebsite();
 
-  useEffect(() => {
-    fetchByCategory(agentId, "WEBSITE");
-  }, [agentId, fetchByCategory]);
+  const knowledgeBases = kbData?.knowledgeBases || [];
 
   const validateUrl = (url: string): boolean => {
     try {
@@ -52,28 +52,24 @@ export default function AgentWebsitePage() {
     }
 
     try {
-      setIsUploading(true);
       setError("");
       setUploadSuccess(false);
 
-      await chatbotAPI.uploadWebsite(
+      await uploadWebsite.mutateAsync({
         agentId,
         websiteUrl,
-        websiteName.trim() || undefined
-      );
+        name: websiteName.trim() || undefined,
+      });
 
       setUploadSuccess(true);
       setTimeout(() => {
         setWebsiteName("");
         setWebsiteUrl("");
         setUploadSuccess(false);
-        fetchByCategory(agentId, "WEBSITE");
       }, 2000);
     } catch (err) {
       console.error("Error uploading website:", err);
       setError(handleAPIError(err));
-    } finally {
-      setIsUploading(false);
     }
   };
 
@@ -82,13 +78,12 @@ export default function AgentWebsitePage() {
       return;
     }
 
-    setDeletingId(kbId);
-    const success = await deleteKnowledgeBase(kbId);
-    setDeletingId(null);
-
-    if (success) {
-      await fetchByCategory(agentId, "WEBSITE");
-    }
+    deleteKnowledgeBase.mutate(kbId, {
+      onError: (error) => {
+        console.error("Error deleting knowledge base:", error);
+        alert("Failed to delete website. Please try again.");
+      },
+    });
   };
 
   return (
@@ -176,10 +171,10 @@ export default function AgentWebsitePage() {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(kb.id)}
-                        disabled={deletingId === kb.id}
+                        disabled={deleteKnowledgeBase.isPending}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                       >
-                        {deletingId === kb.id ? (
+                        {deleteKnowledgeBase.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Trash2 className="w-4 h-4" />
@@ -274,10 +269,10 @@ export default function AgentWebsitePage() {
               <div className="flex gap-4">
                 <Button
                   type="submit"
-                  disabled={isUploading || !websiteUrl.trim()}
+                  disabled={uploadWebsite.isPending || !websiteUrl.trim()}
                   className="min-w-[150px]"
                 >
-                  {isUploading ? (
+                  {uploadWebsite.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Scraping...
@@ -293,7 +288,7 @@ export default function AgentWebsitePage() {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  disabled={isUploading}
+                  disabled={uploadWebsite.isPending}
                 >
                   Cancel
                 </Button>

@@ -11,8 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, CheckCircle2, AlertCircle, Save } from "lucide-react";
-import { settingsAPI, handleAPIError } from "@/lib/api";
+import { handleAPIError } from "@/lib/api";
 import type { ChatbotSettings } from "@/lib/api";
+import { useSettings } from "@/hooks/useSettings";
+import { useUpdateSettings } from "@/hooks/useUpdateSettings";
+import { useResetSettings } from "@/hooks/useResetSettings";
 
 function AgentSettingContent() {
   const params = useParams();
@@ -21,12 +24,15 @@ function AgentSettingContent() {
   const tabFromUrl = searchParams.get("tab") || "general";
 
   const [activeTab, setActiveTab] = useState(tabFromUrl);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  // Settings state
+  // TanStack Query hooks
+  const { data: settingsData, isLoading } = useSettings(agentId);
+  const updateSettings = useUpdateSettings();
+  const resetSettings = useResetSettings();
+
+  // Local settings state for editing
   const [settings, setSettings] = useState<Partial<ChatbotSettings>>({
     primaryColor: "#3b82f6",
     fontFamily: "font-sans",
@@ -39,9 +45,23 @@ function AgentSettingContent() {
     brandingEnabled: true,
   });
 
+  // Update local state when data is loaded
   useEffect(() => {
-    loadSettings();
-  }, [agentId]);
+    if (settingsData?.success && settingsData?.settings) {
+      const normalizedSettings = {
+        ...settingsData.settings,
+        temperature:
+          typeof settingsData.settings.temperature === "number"
+            ? settingsData.settings.temperature
+            : Number(settingsData.settings.temperature || 0.7),
+        maxContextLength:
+          typeof settingsData.settings.maxContextLength === "number"
+            ? settingsData.settings.maxContextLength
+            : Number(settingsData.settings.maxContextLength || 5),
+      };
+      setSettings(normalizedSettings);
+    }
+  }, [settingsData]);
 
   // Sync tab with URL parameter
   useEffect(() => {
@@ -51,47 +71,21 @@ function AgentSettingContent() {
     }
   }, [searchParams]);
 
-  const loadSettings = async () => {
-    try {
-      setIsLoading(true);
-      setError("");
-      const response = await settingsAPI.get(agentId);
-      if (response.success && response.settings) {
-        // Ensure numeric values are properly typed
-        const normalizedSettings = {
-          ...response.settings,
-          temperature: typeof response.settings.temperature === 'number'
-            ? response.settings.temperature
-            : Number(response.settings.temperature || 0.7),
-          maxContextLength: typeof response.settings.maxContextLength === 'number'
-            ? response.settings.maxContextLength
-            : Number(response.settings.maxContextLength || 5),
-        };
-        setSettings(normalizedSettings);
-      }
-    } catch (err) {
-      console.error("Error loading settings:", err);
-      setError(handleAPIError(err));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSave = async () => {
     try {
-      setIsSaving(true);
       setError("");
       setSaveSuccess(false);
 
-      await settingsAPI.update(agentId, settings);
+      await updateSettings.mutateAsync({
+        agentId,
+        settings,
+      });
 
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error("Error saving settings:", err);
       setError(handleAPIError(err));
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -100,19 +94,21 @@ function AgentSettingContent() {
       return;
 
     try {
-      setIsSaving(true);
       setError("");
-      const response = await settingsAPI.reset(agentId);
+      const response = await resetSettings.mutateAsync(agentId);
+
       if (response.success && response.settings) {
         // Ensure numeric values are properly typed
         const normalizedSettings = {
           ...response.settings,
-          temperature: typeof response.settings.temperature === 'number'
-            ? response.settings.temperature
-            : Number(response.settings.temperature || 0.7),
-          maxContextLength: typeof response.settings.maxContextLength === 'number'
-            ? response.settings.maxContextLength
-            : Number(response.settings.maxContextLength || 5),
+          temperature:
+            typeof response.settings.temperature === "number"
+              ? response.settings.temperature
+              : Number(response.settings.temperature || 0.7),
+          maxContextLength:
+            typeof response.settings.maxContextLength === "number"
+              ? response.settings.maxContextLength
+              : Number(response.settings.maxContextLength || 5),
         };
         setSettings(normalizedSettings);
         setSaveSuccess(true);
@@ -121,8 +117,6 @@ function AgentSettingContent() {
     } catch (err) {
       console.error("Error resetting settings:", err);
       setError(handleAPIError(err));
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -256,8 +250,8 @@ function AgentSettingContent() {
               </Card>
 
               <div className="flex gap-4">
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? (
+                <Button onClick={handleSave} disabled={updateSettings.isPending}>
+                  {updateSettings.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Saving...
@@ -269,7 +263,7 @@ function AgentSettingContent() {
                     </>
                   )}
                 </Button>
-                <Button variant="outline" onClick={handleReset} disabled={isSaving}>
+                <Button variant="outline" onClick={handleReset} disabled={resetSettings.isPending}>
                   Reset to Defaults
                 </Button>
               </div>
@@ -342,8 +336,8 @@ function AgentSettingContent() {
               </Card>
 
               <div className="flex gap-4">
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? (
+                <Button onClick={handleSave} disabled={updateSettings.isPending}>
+                  {updateSettings.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Saving...
@@ -409,8 +403,8 @@ function AgentSettingContent() {
               </Card>
 
               <div className="flex gap-4">
-                <Button onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? (
+                <Button onClick={handleSave} disabled={updateSettings.isPending}>
+                  {updateSettings.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Saving...

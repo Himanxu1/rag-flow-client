@@ -32,9 +32,6 @@ const AppSidebar = () => {
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border p-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-            <Bot className="w-5 h-5 text-white" />
-          </div>
           <div>
             <h2 className="font-semibold text-sidebar-foreground">ChatFlow</h2>
             <p className="text-xs text-muted-foreground">AI Agent Platform</p>

@@ -15,8 +15,10 @@ import {
   FileText,
   Trash2,
 } from "lucide-react";
-import { chatbotAPI, handleAPIError } from "@/lib/api";
-import { useKnowledgeBaseStore } from "@/store/knowledgeBaseStore";
+import { handleAPIError } from "@/lib/api";
+import { useKnowledgeBasesByCategory } from "@/hooks/useKnowledgeBasesByCategory";
+import { useDeleteKnowledgeBase } from "@/hooks/useDeleteKnowledgeBase";
+import { useUploadFile } from "@/hooks/useUploadFile";
 
 interface UploadingFile {
   id: string;
@@ -34,14 +36,28 @@ export default function AgentFilePage() {
 
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { knowledgeBases, isLoading, fetchByCategory, deleteKnowledgeBase } =
-    useKnowledgeBaseStore();
+  // TanStack Query hooks
+  const { data: kbData, isLoading, refetch } = useKnowledgeBasesByCategory(agentId, "FILE");
+  const deleteKnowledgeBase = useDeleteKnowledgeBase();
+  const uploadFile = useUploadFile();
 
+  const knowledgeBases = kbData?.knowledgeBases || [];
+
+  // Auto-refresh status every 3 seconds if there are processing files
   useEffect(() => {
-    fetchByCategory(agentId, "FILE");
-  }, [agentId, fetchByCategory]);
+    const hasProcessing = knowledgeBases.some(
+      (kb) => kb.status === "PROCESSING" || kb.status === "PENDING"
+    );
+
+    if (hasProcessing) {
+      const interval = setInterval(() => {
+        refetch();
+      }, 3000);
+
+      return () => clearInterval(interval);
+    }
+  }, [knowledgeBases, refetch]);
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -73,18 +89,22 @@ export default function AgentFilePage() {
       };
 
       setUploadingFiles((prev) => [...prev, newFile]);
-      uploadFile(file, fileId);
+      handleUploadFile(file, fileId);
     });
   };
 
-  const uploadFile = async (file: File, fileId: string) => {
+  const handleUploadFile = async (file: File, fileId: string) => {
     try {
-      await chatbotAPI.uploadFile(agentId, file, (progress) => {
-        setUploadingFiles((prev) =>
-          prev.map((item) =>
-            item.id === fileId ? { ...item, progress } : item
-          )
-        );
+      await uploadFile.mutateAsync({
+        agentId,
+        file,
+        onProgress: (progress) => {
+          setUploadingFiles((prev) =>
+            prev.map((item) =>
+              item.id === fileId ? { ...item, progress } : item
+            )
+          );
+        },
       });
 
       setUploadingFiles((prev) =>
@@ -93,10 +113,12 @@ export default function AgentFilePage() {
         )
       );
 
-      // Remove successful uploads after 3 seconds and refresh the list
+      // Refetch knowledge bases to show the new file
+      refetch();
+
+      // Remove successful uploads after 3 seconds
       setTimeout(() => {
         setUploadingFiles((prev) => prev.filter((item) => item.id !== fileId));
-        fetchByCategory(agentId, "FILE");
       }, 3000);
     } catch (error) {
       const errorMessage = handleAPIError(error);
@@ -115,14 +137,12 @@ export default function AgentFilePage() {
       return;
     }
 
-    setDeletingId(kbId);
-    const success = await deleteKnowledgeBase(kbId);
-    setDeletingId(null);
-
-    if (success) {
-      // Refresh the list
-      await fetchByCategory(agentId, "FILE");
-    }
+    deleteKnowledgeBase.mutate(kbId, {
+      onError: (error) => {
+        console.error("Error deleting knowledge base:", error);
+        alert("Failed to delete file. Please try again.");
+      },
+    });
   };
 
   const removeFile = (fileId: string) => {
@@ -193,16 +213,21 @@ export default function AgentFilePage() {
                           <h3 className="font-medium truncate">{kb.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             <span
-                              className={`text-xs px-2 py-1 rounded-full ${
+                              className={`text-xs px-2 py-1 rounded-full flex items-center gap-1 ${
                                 kb.status === "READY"
                                   ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                                  : kb.status === "PROCESSING"
+                                  : kb.status === "PROCESSING" || kb.status === "PENDING"
                                   ? "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
                                   : kb.status === "FAILED"
                                   ? "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
                                   : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
                               }`}
                             >
+                              {(kb.status === "PROCESSING" || kb.status === "PENDING") && (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              )}
+                              {kb.status === "READY" && <CheckCircle2 className="w-3 h-3" />}
+                              {kb.status === "FAILED" && <AlertCircle className="w-3 h-3" />}
                               {kb.status || "PENDING"}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -220,10 +245,10 @@ export default function AgentFilePage() {
                         size="icon"
                         variant="ghost"
                         onClick={() => handleDelete(kb.id)}
-                        disabled={deletingId === kb.id}
+                        disabled={deleteKnowledgeBase.isPending}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
                       >
-                        {deletingId === kb.id ? (
+                        {deleteKnowledgeBase.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Trash2 className="w-4 h-4" />
